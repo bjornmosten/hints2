@@ -5,6 +5,10 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+zbus = { version = "4", default-features = false, features = ["tokio"] }
+x11rb = { version = "0.13", features = ["cursor", "xkb", "allow-unsafe-code"] }
+log = "0.4"
 
 [lib]
 path = "src/lib.rs"

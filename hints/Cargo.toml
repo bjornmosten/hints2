@@ -4,8 +4,21 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4", features = ["derive"] }
+gtk = "0.18"
+gdk = "0.18"
+glib = "0.18"
+gio = "0.18"
+cairo-rs = "0.18"
+log = "0.4"
+env_logger = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+dirs = "5"
+itertools = "0.13"
+zbus = { version = "4", default-features = false, features = ["tokio"] }
+utils = { path = "../utils" }
+window_systems = { path = "../window_systems" }
 
 [[bin]]
 name = "hints"

@@ -1,0 +1,153 @@
+{
+  "title": "hints2 Rust Implementation",
+  "description": "Full Rust port of the hints2 Python application - keyboard-driven GUI navigation tool using hint labels overlaid on screen elements.",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Workspace Cargo.toml and crate dependency setup",
+      "description": "Add all required dependencies to workspace and crate Cargo.toml files",
+      "passes": false,
+      "acceptanceCriteria": [
+        "Workspace Cargo.toml has resolver = '2' and lists all 5 member crates",
+        "hints/Cargo.toml has: clap (derive), gtk (0.18 GTK3), cairo-rs, gdk, glib, gio, log, env_logger, serde, serde_json, dirs, itertools, zbus",
+        "window_systems/Cargo.toml has: serde, serde_json, zbus, x11rb, log",
+        "backends/Cargo.toml has: serde, serde_json, log, zbus, atspi, image, screenshots",
+        "mouse_service/Cargo.toml has: evdev, tokio (full), serde, serde_json, log, env_logger, glib, gdk, gtk",
+        "utils/Cargo.toml has: serde, serde_json, dirs, log, itertools",
+        "All crate Cargo.toml files have correct package metadata (name, version, edition = '2021')",
+        "cargo check completes (even with placeholder implementations)"
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "utils crate: Child, config, errors, hint generation",
+      "description": "Implement all shared types and utilities in the utils crate",
+      "passes": false,
+      "acceptanceCriteria": [
+        "Child struct has fields: absolute_position: (f64,f64), relative_position: (f64,f64), width: f64, height: f64",
+        "Config struct mirrors DEFAULT_CONFIG from Python constants.py with serde Deserialize",
+        "load_config() reads ~/.config/hints/config.json and deep-merges with defaults (missing keys fall back to defaults)",
+        "get_hints(children: &[Child], alphabet: &str) -> HashMap<String, Child> produces combinatorial labels using itertools::repeat_n product, length = ceil(log(n)/log(|alphabet|))",
+        "Error types defined: AccessibleChildrenNotFound, CouldNotFindAccessibleWindow, WindowSystemNotSupported, CouldNotCommunicateWithMouseService - all implement std::error::Error",
+        "UNIX_DOMAIN_SOCKET_FILE constant = '/tmp/hints.socket'",
+        "MouseButton enum: Left, Right with evdev BTN_LEFT/BTN_RIGHT values",
+        "MouseButtonState enum: Down=1, Up=0",
+        "MouseMode enum: Move, Scroll",
+        "WindowSystemType enum: X11, Wayland"
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "window_systems crate: trait and all 5 implementations",
+      "description": "Implement WindowSystem trait and X11, Sway, Hyprland, Plasmashell, Gnome implementations",
+      "passes": false,
+      "acceptanceCriteria": [
+        "WindowSystem trait has methods: window_system_name()->&str, focused_window_extents()->(i32,i32,i32,i32), focused_window_pid()->u32, focused_application_name()->&str, window_system_type()->WindowSystemType",
+        "detect() checks XDG_SESSION_TYPE env var; if wayland, runs 'ps -e -o comm' and matches against {sway, Hyprland, plasmashell, gnome-shell}; returns Box<dyn WindowSystem>",
+        "X11 impl: uses x11rb to get active window geometry, PID, and WM_CLASS via _NET_ACTIVE_WINDOW",
+        "Sway impl: runs 'swaymsg -t get_tree' + 'swaymsg -t get_workspaces' + 'swaymsg -t get_outputs', parses JSON, computes bar_height = output_height - workspace_height",
+        "Hyprland impl: runs 'hyprctl activewindow -j', parses JSON fields at/size/pid/class",
+        "Plasmashell impl: uses zbus SessionBus to call org.kde.KWin /Scripting loadScript, runs script, reads journalctl output since start_time, parses JSON",
+        "Gnome impl: uses zbus to call uk.co.realh.Hints FocusedWindowInfo DBus method, returns x/y/w/h/pid/name/monitor",
+        "get_window_system(override: Option<&str>) -> Result<Box<dyn WindowSystem>, WindowSystemNotSupported> implements full detection logic matching Python get_window_system()"
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "backends crate: Backend trait, AT-SPI backend, OpenCV backend",
+      "description": "Implement the two backends for discovering clickable UI elements",
+      "passes": false,
+      "acceptanceCriteria": [
+        "Backend trait has: get_children(&mut self) -> Result<Vec<Child>, AccessibleChildrenNotFound>, get_application_rules() -> ApplicationRules",
+        "ApplicationRules struct holds atspi states/roles/match_types, scale_factor, opencv kernel_size/canny_min_val/canny_max_val",
+        "get_application_rules() merges 'default' rules from config with per-application overrides keyed by focused_application_name()",
+        "AtspiBackend: uses atspi crate to walk accessibility tree; Collection interface fast-path with MatchRule; recursive fallback when Collection unavailable",
+        "AtspiBackend: get_relative_and_absolute_extents() handles Wayland (window-relative coords) vs X11 (screen-absolute coords) and GTK4 negative-x correction",
+        "AtspiBackend: get_atspi_active_window() matches by PID from window_system.focused_window_pid(), skips mutter-x11-frames",
+        "OpenCV backend: takes screenshot of focused_window_extents using 'screenshots' crate, converts to grayscale, applies Canny edge detection + dilation + findContours via opencv crate",
+        "OpenCV backend: applies sway bar_height offset to screenshot region",
+        "BackendType enum: Atspi, OpenCV; get_backends(config) returns ordered Vec matching config backends.enable list"
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "mouse_service crate: uinput daemon with Unix socket IPC",
+      "description": "Implement the hintsd mouse service daemon",
+      "passes": false,
+      "acceptanceCriteria": [
+        "Mouse struct creates two evdev UInput devices: relative mouse (EV_REL: REL_X/Y/HWHEEL/WHEEL, EV_KEY: BTN_LEFT/BTN_RIGHT) and absolute mouse (EV_ABS: ABS_X/ABS_Y with screen size max, EV_KEY: BTN_LEFT/BTN_RIGHT)",
+        "Mouse::scroll(x,y) writes REL_HWHEEL and REL_WHEEL events",
+        "Mouse::move_mouse(x,y,absolute) writes ABS_X/ABS_Y (absolute) or REL_X/REL_Y (relative) then sleeps write_pause",
+        "Mouse::click(x,y,button,button_states,repeat,absolute) calls move, iterates button_states writing EV_KEY events, does position-clearing move if absolute",
+        "Mouse::do_mouse_action(key_press_state, key, mode) implements sensitivity ramp-up: tracks start_time, increments sensitivity after rampup_time, dispatches left/right/up/down keys from config",
+        "MouseService binds Unix socket at /tmp/hints.socket (removing stale file first)",
+        "Socket server reads JSON messages with {method, args, kwargs}, dispatches to Mouse methods, writes JSON response",
+        "MouseService listens for screen size changes via GDK and recreates Mouse with new dimensions (using total bounding box of all monitors, not just primary)",
+        "SIGINT handler closes socket and exits cleanly",
+        "Binary named 'hintsd' (not 'mouse_service')"
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "hints crate: CLI, mouse IPC client, hint generation orchestration",
+      "description": "Implement the main hints binary entry point, CLI args, and mouse client",
+      "passes": false,
+      "acceptanceCriteria": [
+        "CLI has: -m/--mode (hint|scroll, default hint), -v/--verbose (count, stackable), -s/--setup (flag)",
+        "Verbose flag sets log level: >=1 -> Debug, else Info",
+        "Mouse IPC client: send_message(method, args, kwargs) connects to /tmp/hints.socket, sends JSON, reads JSON response",
+        "IPC client functions: click(x,y,button,button_states,repeat,absolute), move(x,y,absolute), scroll(x,y), do_mouse_action(key_press_state,key,mode)",
+        "hint_mode(config, window_system): iterates enabled backends, calls get_children(), calls get_hints(), displays OverlayWindow, dispatches mouse action (click/hover/grab) via IPC client",
+        "scroll_mode(config, window_system): displays InterceptorWindow with action=scroll",
+        "get_hints(children, alphabet) -> HashMap<String, Child>: uses itertools product with repeat=ceil(log(n)/log(|alphabet|))",
+        "Main entry: loads config, parses CLI args, detects window system (or uses config override), dispatches to hint_mode or scroll_mode or setup"
+      ]
+    },
+    {
+      "id": "US-007",
+      "title": "hints crate: GTK3 OverlayWindow with Cairo drawing",
+      "description": "Implement the hint overlay GTK window with full keyboard handling",
+      "passes": false,
+      "acceptanceCriteria": [
+        "OverlayWindow is a GTK3 POPUP window with Cairo-drawn hint labels",
+        "Each hint label: yellow background rectangle (configurable RGBA), centered text in configurable font/size/color",
+        "Pressed state: overlay hint_selector_state prefix in pressed color over normal color",
+        "Keyboard handling: alphabetic keys filter hints (update_hints), digit keys append to repeat count, Escape quits, Ctrl modifier sets hover, Alt modifier sets grab, uppercase key (shift) sets right-click button",
+        "When hints filtered to exactly 1: ungrab keyboard, destroy window, set mouse_action with x/y/action/button/repeat",
+        "on_show: grab keyboard (X11 only, not Wayland), hide cursor via 'none' cursor name",
+        "Window positioned via display_gtk_window: X11 uses move(), Wayland uses GtkLayerShell (set_monitor, set_margin LEFT/TOP, anchor TOP/LEFT, OVERLAY layer, EXCLUSIVE keyboard mode, namespace 'hints'), GNOME uses DBus PositionWindow",
+        "InterceptorWindow: 1x1 GTK3 POPUP, key-press -> do_mouse_action (grab->MOVE mode, scroll->SCROLL mode), key-release clears key_press_state, first key press does tiny relative move for Hyprland focus, Escape sends MouseButtonState::Up then quits",
+        "on_show for InterceptorWindow: grab keyboard (X11 only)"
+      ]
+    },
+    {
+      "id": "US-008",
+      "title": "Setup wizard",
+      "description": "Implement the guided --setup wizard matching Python setup.py",
+      "passes": false,
+      "acceptanceCriteria": [
+        "run_guided_setup() checks for root (uid==0); if not root, prints the sudo command to re-run and exits",
+        "setup_accessibility_variables(): appends missing env vars (ACCESSIBILITY_ENABLED, GTK_MODULES, OOO_FORCE_DESKTOP, GNOME_ACCESSIBILITY, QT_ACCESSIBILITY, QT_LINUX_ACCESSIBILITY_ALWAYS_ON) to /etc/environment",
+        "setup_uinput_module(): runs 'modprobe uinput' and writes 'uinput' to /etc/modules-load.d/uinput.conf",
+        "setup_udev_rules(): writes KERNEL==\"uinput\" rule to /etc/udev/rules.d/80-hints.rules, adds SUDO_USER to input group via usermod",
+        "setup_hintsd(): runs systemctl --machine={USER}@.host --user daemon-reload/enable/start hintsd",
+        "setup_gnome_plugin(): symlinks hints extension dir to ~/.local/share/gnome-shell/extensions/",
+        "is_wayland_gnome() check adds setup_gnome_plugin to setup list when true",
+        "should_continue() prompts user with list of changes before proceeding",
+        "show_post_setup_instructions() prompts for reboot after completion"
+      ]
+    },
+    {
+      "id": "US-009",
+      "title": "cargo build succeeds",
+      "description": "The entire workspace compiles without errors",
+      "passes": false,
+      "acceptanceCriteria": [
+        "'cargo build' in project root exits with code 0",
+        "No compiler errors in any crate",
+        "No unused import warnings that would block compilation",
+        "Both binaries are produced: target/debug/hints and target/debug/hintsd"
+      ]
+    }
+  ]
+}
