@@ -1,0 +1,196 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775803310897,
+  "projectRoot": "/home/bjorn/Documents/projects/other-group/hints",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "hints": {
+      "path": "hints",
+      "purpose": null,
+      "fileCount": 11,
+      "lastAccessed": 1775803310892,
+      "keyFiles": [
+        "__init__.py",
+        "child.py",
+        "constants.py",
+        "dbus.py",
+        "gnome_overlay.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "hints/mouse_service.py",
+      "accessCount": 6,
+      "lastAccessed": 1775807315163,
+      "type": "file"
+    },
+    {
+      "path": "hints/huds/overlay.py",
+      "accessCount": 6,
+      "lastAccessed": 1775815041872,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/atspi.py",
+      "accessCount": 4,
+      "lastAccessed": 1775815016175,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/sway.py",
+      "accessCount": 3,
+      "lastAccessed": 1775815352260,
+      "type": "file"
+    },
+    {
+      "path": "hints/hints.py",
+      "accessCount": 3,
+      "lastAccessed": 1775815358371,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/opencv.py",
+      "accessCount": 2,
+      "lastAccessed": 1775805650363,
+      "type": "file"
+    },
+    {
+      "path": "hints/constants.py",
+      "accessCount": 2,
+      "lastAccessed": 1775806115677,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/backend.py",
+      "accessCount": 2,
+      "lastAccessed": 1775806117027,
+      "type": "file"
+    },
+    {
+      "path": "hints/mouse.py",
+      "accessCount": 2,
+      "lastAccessed": 1775807006447,
+      "type": "file"
+    },
+    {
+      "path": "hints/utils.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805654661,
+      "type": "file"
+    },
+    {
+      "path": "hints/child.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805654719,
+      "type": "file"
+    },
+    {
+      "path": "hints/gnome_overlay.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805659019,
+      "type": "file"
+    },
+    {
+      "path": "hints/huds/interceptor.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805659201,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/window_system.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805659568,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/x11.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805662964,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/exceptions.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805663574,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/gnome.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805668384,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/hyprland.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805668887,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/plasmashell.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805668901,
+      "type": "file"
+    },
+    {
+      "path": "hints/dbus.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805673234,
+      "type": "file"
+    },
+    {
+      "path": "hints/mouse_enums.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805673410,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/window_system_type.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805673554,
+      "type": "file"
+    },
+    {
+      "path": "setup.py",
+      "accessCount": 1,
+      "lastAccessed": 1775805677399,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1775805677573,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

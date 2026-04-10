@@ -104,17 +104,8 @@ class OverlayWindow(Gtk.Window):
         self.connect("show", self.on_show)
         self.drawing_area.connect("draw", self.on_draw)
 
-        def put_in_frame(widget):
-            frame = Gtk.Frame(label=None)
-            frame.set_property("shadow_type", Gtk.ShadowType.IN)
-            frame.add(widget)
-            return frame
-
         self.current_snippet = None
-
-        vpaned = Gtk.VPaned()
-        self.add(vpaned)
-        vpaned.pack1(put_in_frame(self.drawing_area), True, True)
+        self.add(self.drawing_area)
 
     def on_draw(self, _, cr: Context):
         """Draw hints.

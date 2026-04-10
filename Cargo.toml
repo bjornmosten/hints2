@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "hints",
+    "window_systems",
+    "backends",
+    "utils",
+    "mouse_service",
+]

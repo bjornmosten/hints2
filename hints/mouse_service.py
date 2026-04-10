@@ -229,7 +229,7 @@ class MouseService:
         Gtk.init()
 
         self.screen = Gdk.Screen.get_default()
-        self.mouse = Mouse(self.screen.get_width(), self.screen.get_height())
+        self.mouse = Mouse(*self._get_total_display_size())
 
         if path.exists(UNIX_DOMAIN_SOCKET_FILE):
             remove(UNIX_DOMAIN_SOCKET_FILE)
@@ -249,13 +249,30 @@ class MouseService:
         self.socket.close()
         Gtk.main_quit()
 
+    def _get_total_display_size(self) -> tuple[int, int]:
+        """Get the total bounding box of all monitors.
+
+        Gdk.Screen.get_width/height() is deprecated and returns only the
+        primary monitor size on some compositors (notably Wayland), causing
+        incorrect uinput ABS coordinate scaling on multi-monitor setups.
+
+        :return: Total width and height spanning all monitors.
+        """
+        display = Gdk.Display.get_default()
+        max_x = max_y = 0
+        for i in range(display.get_n_monitors()):
+            geo = display.get_monitor(i).get_geometry()
+            max_x = max(max_x, geo.x + geo.width)
+            max_y = max(max_y, geo.y + geo.height)
+        return max_x or self.screen.get_width(), max_y or self.screen.get_height()
+
     def on_size_changed(self, screen: Gdk.Screen):
         """Screen size change event handler to update the mouse device min/max
         values for correct absolute position movement.
 
         :param screen: The screen object for the event.
         """
-        self.mouse = Mouse(screen.get_width(), screen.get_height())
+        self.mouse = Mouse(*self._get_total_display_size())
 
     def socket_connection(self):
         """Handle socket connection events.

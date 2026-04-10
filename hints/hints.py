@@ -209,10 +209,6 @@ def hint_mode(config: HintsConfig, window_system: WindowSystem):
                 mouse_x_offset = 0
                 mouse_y_offset = 0
 
-                match window_system.window_system_name:
-                    case "sway":
-                        mouse_y_offset = window_system.bar_height
-
                 logger.debug("performing '%s'", mouse_action)
 
                 match mouse_action["action"]:

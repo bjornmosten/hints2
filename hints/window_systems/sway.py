@@ -68,12 +68,9 @@ class Sway(WindowSystem):
 
         :return: Active window extents (x, y, width, height).
         """
-        # The focused widnow does not included offsets for the top bar (swaybar).
-        # So we need to calcuare the height of the bar for the current monitor.
-        # Unknow if this will be an issue with other bars on sway.
         return (
             self.focused_window["rect"]["x"],
-            self.focused_window["rect"]["y"] - self.bar_height,
+            self.focused_window["rect"]["y"],
             self.focused_window["rect"]["width"],
             self.focused_window["rect"]["height"],
         )
