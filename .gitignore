@@ -164,3 +164,7 @@ cython_debug/
 # Excluded because I had to hardwire my home directory for fakegir stubs
 pyrightconfig.json
 pyproject.toml
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
