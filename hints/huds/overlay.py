@@ -58,6 +58,8 @@ class OverlayWindow(Gtk.Window):
         hints_config = config["hints"]
         self.hint_height = hints_config["hint_height"]
         self.hint_width_padding = hints_config["hint_width_padding"]
+        self.hint_shift_x = hints_config.get("hint_x_offset", 0)
+        self.hint_shift_y = hints_config.get("hint_y_offset", 0)
 
         self.hint_font_size = hints_config["hint_font_size"]
         self.hint_font_face = hints_config["hint_font_face"]
@@ -134,8 +136,8 @@ class OverlayWindow(Gtk.Window):
                 cr.new_path()
                 # offset to bring top left corner of a hint to the correct possition
                 # so that the hint is centered on the object
-                hint_x_offset = child.width / 2 - hint_width / 2
-                hint_y_offset = child.height / 2 - hint_height / 2
+                hint_x_offset = child.width / 2 - hint_width / 2 + self.hint_shift_x
+                hint_y_offset = child.height / 2 - hint_height / 2 + self.hint_shift_y
 
                 hint_x = x_loc + hint_x_offset
                 hint_y = y_loc + hint_y_offset

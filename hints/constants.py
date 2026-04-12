@@ -16,6 +16,8 @@ DEFAULT_CONFIG = {
     "hints": {
         "hint_height": 30,
         "hint_width_padding": 10,
+        "hint_x_offset": 0,
+        "hint_y_offset": 0,
         "hint_font_size": 15,
         "hint_font_face": "Sans",
         "hint_font_r": 0,

@@ -1,0 +1,3 @@
+#!/bin/bash
+cd /home/bjorn/Documents/projects/other-group/hints2
+PYTHONPATH=hints .venv/bin/python -m hints.hints "$@"

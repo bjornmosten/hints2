@@ -45,7 +45,8 @@ class OpenCV(HintsBackend):
                 y + window_extents_offsets[1],
                 x + w + window_extents_offsets[2],
                 y + h + window_extents_offsets[3],
-            )
+            ),
+            backend="grim",
         )
 
     def get_children(self) -> list[Child]:

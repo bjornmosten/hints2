@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"pkill -f \\\"hints.mouse_service\\\" 2>/dev/null; echo \\\"killed\\\"\",\"description\":\"Kill existing mouse_service process\"}",
+  "error": "Exit code 144\n[rerun: b14]",
+  "timestamp": "2026-04-11T17:55:35.377Z",
+  "retry_count": 1
+}

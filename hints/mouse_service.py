@@ -143,10 +143,11 @@ class Mouse:
         """
         self.move(x, y, absolute=absolute)
 
+        device = self.absolute_mouse if absolute else self.relative_mouse
         for _ in range(repeat):
             for button_state in button_states:
-                self.relative_mouse.write(ecodes.EV_KEY, button, button_state)
-                self.relative_mouse.syn()
+                device.write(ecodes.EV_KEY, button, button_state)
+                device.syn()
                 sleep(self.write_pause)
 
         if absolute:
@@ -242,6 +243,11 @@ class MouseService:
         GLib.timeout_add(MOUSE_SERVICE_LOOP_MS_INTERVAL, self.socket_connection)
 
         self.screen.connect("size-changed", self.on_size_changed)
+
+        display = Gdk.Display.get_default()
+        display.connect("monitor-added", self.on_monitors_changed)
+        display.connect("monitor-removed", self.on_monitors_changed)
+
         signal(SIGINT, self.on_interrupt)
 
     def on_interrupt(self, *_):
@@ -274,6 +280,16 @@ class MouseService:
         """
         self.mouse = Mouse(*self._get_total_display_size())
 
+    def on_monitors_changed(self, _display: Gdk.Display, _monitor: Gdk.Monitor):
+        """Monitor add/remove event handler to update the mouse device min/max
+        values. Gdk.Screen size-changed is not reliably emitted on Wayland when
+        outputs are hotplugged or configured after startup (e.g. on sway login).
+
+        :param display: The display object for the event.
+        :param monitor: The monitor that was added or removed.
+        """
+        self.mouse = Mouse(*self._get_total_display_size())
+
     def socket_connection(self):
         """Handle socket connection events.
 
@@ -291,7 +307,7 @@ class MouseService:
                     {
                         "click": self.mouse.click,
                         "move": self.mouse.move,
-                        "scoll": self.mouse.scroll,
+                        "scroll": self.mouse.scroll,
                         "do_mouse_action": self.mouse.do_mouse_action,
                     }[method](*args, **kwargs)
                 )

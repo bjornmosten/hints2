@@ -1,18 +1,35 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775803310897,
-  "projectRoot": "/home/bjorn/Documents/projects/other-group/hints",
+  "lastScanned": 1775926838928,
+  "projectRoot": "/home/bjorn/Documents/projects/other-group/hints2",
   "techStack": {
-    "languages": [],
+    "languages": [
+      {
+        "name": "Rust",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "Cargo.toml"
+        ]
+      },
+      {
+        "name": "C/C++",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "Makefile"
+        ]
+      }
+    ],
     "frameworks": [],
-    "packageManager": null,
+    "packageManager": "cargo",
     "runtime": null
   },
   "build": {
-    "buildCommand": null,
-    "testCommand": null,
-    "lintCommand": null,
-    "devCommand": null,
+    "buildCommand": "cargo build",
+    "testCommand": "cargo test",
+    "lintCommand": "cargo clippy",
+    "devCommand": "cargo run",
     "scripts": {}
   },
   "conventions": {
@@ -24,7 +41,9 @@
   "structure": {
     "isMonorepo": false,
     "workspaces": [],
-    "mainDirectories": [],
+    "mainDirectories": [
+      "src"
+    ],
     "gitBranches": {
       "defaultBranch": "main",
       "branchingStrategy": null
@@ -32,79 +51,187 @@
   },
   "customNotes": [],
   "directoryMap": {
+    "backends": {
+      "path": "backends",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775926838922,
+      "keyFiles": [
+        "Cargo.toml"
+      ]
+    },
     "hints": {
       "path": "hints",
       "purpose": null,
-      "fileCount": 11,
-      "lastAccessed": 1775803310892,
+      "fileCount": 13,
+      "lastAccessed": 1775926838923,
       "keyFiles": [
+        "Cargo.toml",
         "__init__.py",
         "child.py",
         "constants.py",
-        "dbus.py",
-        "gnome_overlay.py"
+        "dbus.py"
+      ]
+    },
+    "mouse_service": {
+      "path": "mouse_service",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775926838923,
+      "keyFiles": [
+        "Cargo.toml"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775926838925,
+      "keyFiles": [
+        "main.rs"
+      ]
+    },
+    "target": {
+      "path": "target",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1775926838925,
+      "keyFiles": [
+        "CACHEDIR.TAG"
+      ]
+    },
+    "utils": {
+      "path": "utils",
+      "purpose": "Utility functions",
+      "fileCount": 1,
+      "lastAccessed": 1775926838926,
+      "keyFiles": [
+        "Cargo.toml"
+      ]
+    },
+    "window_systems": {
+      "path": "window_systems",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775926838926,
+      "keyFiles": [
+        "Cargo.toml"
+      ]
+    },
+    "backends/src": {
+      "path": "backends/src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775926838926,
+      "keyFiles": [
+        "lib.rs"
+      ]
+    },
+    "mouse_service/src": {
+      "path": "mouse_service/src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775926838926,
+      "keyFiles": [
+        "main.rs"
+      ]
+    },
+    "utils/src": {
+      "path": "utils/src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775926838927,
+      "keyFiles": [
+        "lib.rs"
+      ]
+    },
+    "window_systems/src": {
+      "path": "window_systems/src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1775926838927,
+      "keyFiles": [
+        "lib.rs"
       ]
     }
   },
   "hotPaths": [
     {
       "path": "hints/mouse_service.py",
-      "accessCount": 6,
-      "lastAccessed": 1775807315163,
+      "accessCount": 16,
+      "lastAccessed": 1776004228556,
       "type": "file"
     },
     {
       "path": "hints/huds/overlay.py",
-      "accessCount": 6,
-      "lastAccessed": 1775815041872,
-      "type": "file"
-    },
-    {
-      "path": "hints/backends/atspi.py",
-      "accessCount": 4,
-      "lastAccessed": 1775815016175,
-      "type": "file"
-    },
-    {
-      "path": "hints/window_systems/sway.py",
-      "accessCount": 3,
-      "lastAccessed": 1775815352260,
+      "accessCount": 13,
+      "lastAccessed": 1776004122534,
       "type": "file"
     },
     {
       "path": "hints/hints.py",
-      "accessCount": 3,
-      "lastAccessed": 1775815358371,
+      "accessCount": 11,
+      "lastAccessed": 1776004132767,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/atspi.py",
+      "accessCount": 10,
+      "lastAccessed": 1776004133198,
       "type": "file"
     },
     {
       "path": "hints/backends/opencv.py",
-      "accessCount": 2,
-      "lastAccessed": 1775805650363,
+      "accessCount": 8,
+      "lastAccessed": 1776004133250,
       "type": "file"
     },
     {
       "path": "hints/constants.py",
-      "accessCount": 2,
-      "lastAccessed": 1775806115677,
-      "type": "file"
-    },
-    {
-      "path": "hints/backends/backend.py",
-      "accessCount": 2,
-      "lastAccessed": 1775806117027,
+      "accessCount": 5,
+      "lastAccessed": 1775931368496,
       "type": "file"
     },
     {
       "path": "hints/mouse.py",
-      "accessCount": 2,
-      "lastAccessed": 1775807006447,
+      "accessCount": 4,
+      "lastAccessed": 1775929250898,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/sway.py",
+      "accessCount": 4,
+      "lastAccessed": 1776004145734,
+      "type": "file"
+    },
+    {
+      "path": "hints/backends/backend.py",
+      "accessCount": 3,
+      "lastAccessed": 1775929198754,
       "type": "file"
     },
     {
       "path": "hints/utils.py",
-      "accessCount": 1,
-      "lastAccessed": 1775805654661,
+      "accessCount": 3,
+      "lastAccessed": 1775931438281,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/window_system_type.py",
+      "accessCount": 2,
+      "lastAccessed": 1775929207368,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/x11.py",
+      "accessCount": 2,
+      "lastAccessed": 1775940860778,
+      "type": "file"
+    },
+    {
+      "path": "hints/window_systems/window_system.py",
+      "accessCount": 2,
+      "lastAccessed": 1776004145859,
       "type": "file"
     },
     {
@@ -123,18 +250,6 @@
       "path": "hints/huds/interceptor.py",
       "accessCount": 1,
       "lastAccessed": 1775805659201,
-      "type": "file"
-    },
-    {
-      "path": "hints/window_systems/window_system.py",
-      "accessCount": 1,
-      "lastAccessed": 1775805659568,
-      "type": "file"
-    },
-    {
-      "path": "hints/window_systems/x11.py",
-      "accessCount": 1,
-      "lastAccessed": 1775805662964,
       "type": "file"
     },
     {
@@ -174,12 +289,6 @@
       "type": "file"
     },
     {
-      "path": "hints/window_systems/window_system_type.py",
-      "accessCount": 1,
-      "lastAccessed": 1775805673554,
-      "type": "file"
-    },
-    {
       "path": "setup.py",
       "accessCount": 1,
       "lastAccessed": 1775805677399,
@@ -190,6 +299,30 @@
       "accessCount": 1,
       "lastAccessed": 1775805677573,
       "type": "file"
+    },
+    {
+      "path": "hints/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1775929186447,
+      "type": "file"
+    },
+    {
+      "path": "hints",
+      "accessCount": 1,
+      "lastAccessed": 1775940844067,
+      "type": "directory"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1775940844846,
+      "type": "directory"
+    },
+    {
+      "path": "hints/window_systems",
+      "accessCount": 1,
+      "lastAccessed": 1775940853220,
+      "type": "directory"
     }
   ],
   "userDirectives": []

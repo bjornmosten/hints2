@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from argparse import ArgumentParser
 from itertools import product
 from math import ceil, log
@@ -296,20 +297,30 @@ def get_window_system(window_system_id: str = "") -> Type[WindowSystem]:
             window_system_id = "x11"
         if window_system_type == WindowSystemType.WAYLAND:
 
-            # add new waland wms here, then add a match case below to import the class
-            supported_wayland_wms = {"sway", "Hyprland", "plasmashell", "gnome-shell"}
+            env = os.environ
+            if env.get("SWAYSOCK"):
+                window_system_id = "sway"
+            elif env.get("HYPRLAND_INSTANCE_SIGNATURE"):
+                window_system_id = "hyprland"
+            elif env.get("XDG_CURRENT_DESKTOP", "").lower() == "kde":
+                window_system_id = "plasmashell"
+            elif env.get("XDG_CURRENT_DESKTOP", "").lower() in {"gnome", "ubuntu:gnome"}:
+                window_system_id = "gnome-shell"
+            else:
+                # add new wayland wms here, then add a match case below to import the class
+                supported_wayland_wms = {"sway", "Hyprland", "plasmashell", "gnome-shell"}
 
-            # Check if there is a process running that matches the supported_wayland_wms
-            window_system_id = (
-                run(
-                    "ps -e -o comm | grep -m 1 -o -E "
-                    + " ".join([f"-e '^{wm}$'" for wm in supported_wayland_wms]),
-                    capture_output=True,
-                    shell=True,
-                )
-                .stdout.decode("utf-8")
-                .strip()
-            ).lower()
+                # Fallback: check running processes
+                window_system_id = (
+                    run(
+                        "ps -e -o comm | grep -m 1 -o -E "
+                        + " ".join([f"-e '^{wm}$'" for wm in supported_wayland_wms]),
+                        capture_output=True,
+                        shell=True,
+                    )
+                    .stdout.decode("utf-8")
+                    .strip()
+                ).lower()
 
     window_system = get_window_system_class(window_system_id)
 

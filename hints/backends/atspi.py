@@ -290,22 +290,32 @@ class AtspiBackend(HintsBackend):
         desktop = Atspi.get_desktop(0)
         for app_index in range(desktop.get_child_count()):
             window = desktop.get_child_at_index(app_index)
+            if window is None:
+                continue
             # Gnome creates a mutter application that is also focused.
             # This is not what we want, so we are skipping it.
-            if "mutter-x11-frames" in window.get_description():
+            try:
+                if "mutter-x11-frames" in window.get_description():
+                    continue
+            except Exception:
                 continue
             for window_index in range(window.get_child_count()):
                 current_window = window.get_child_at_index(window_index)
+                if current_window is None:
+                    continue
                 # Some hidden windows that are minimized to status trays
                 # (like discord) will still have the Atspi.StateType.Active
                 # state, so the pid from the window manger allows us to filter
                 # out such applications.
-                if (
-                    current_window.get_state_set().contains(Atspi.StateType.ACTIVE)
-                    and current_window.get_process_id()
-                    == self.window_system.focused_window_pid
-                ):
-                    return current_window
+                try:
+                    if (
+                        current_window.get_state_set().contains(Atspi.StateType.ACTIVE)
+                        and current_window.get_process_id()
+                        == self.window_system.focused_window_pid
+                    ):
+                        return current_window
+                except Exception:
+                    continue
 
         return None
 
