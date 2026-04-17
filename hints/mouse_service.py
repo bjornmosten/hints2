@@ -9,12 +9,18 @@ process when creating virutal devices.
 
 from __future__ import annotations
 
+import json
+import logging
+import os
 import socket
+import subprocess
 from os import path, remove
 from pickle import dumps, loads
 from signal import SIGINT, signal
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Iterable
+
+logger = logging.getLogger(__name__)
 
 from evdev import AbsInfo, UInput, ecodes
 from gi import require_version
@@ -230,7 +236,9 @@ class MouseService:
         Gtk.init()
 
         self.screen = Gdk.Screen.get_default()
-        self.mouse = Mouse(*self._get_total_display_size())
+        self._region = self._get_total_display_region()
+        self.mouse = Mouse(self._region[2], self._region[3])
+        self._apply_sway_mapping()
 
         if path.exists(UNIX_DOMAIN_SOCKET_FILE):
             remove(UNIX_DOMAIN_SOCKET_FILE)
@@ -255,22 +263,83 @@ class MouseService:
         self.socket.close()
         Gtk.main_quit()
 
-    def _get_total_display_size(self) -> tuple[int, int]:
-        """Get the total bounding box of all monitors.
+    def _get_total_display_region(self) -> tuple[int, int, int, int]:
+        """Get the bounding box (x, y, width, height) spanning all monitors.
 
-        Gdk.Screen.get_width/height() is deprecated and returns only the
-        primary monitor size on some compositors (notably Wayland), causing
-        incorrect uinput ABS coordinate scaling on multi-monitor setups.
-
-        :return: Total width and height spanning all monitors.
+        Uses min/max of monitor geometries so negative-offset monitors work.
         """
         display = Gdk.Display.get_default()
-        max_x = max_y = 0
-        for i in range(display.get_n_monitors()):
-            geo = display.get_monitor(i).get_geometry()
-            max_x = max(max_x, geo.x + geo.width)
-            max_y = max(max_y, geo.y + geo.height)
-        return max_x or self.screen.get_width(), max_y or self.screen.get_height()
+        n = display.get_n_monitors()
+        if n == 0:
+            return (0, 0, self.screen.get_width(), self.screen.get_height())
+        g0 = display.get_monitor(0).get_geometry()
+        min_x, min_y = g0.x, g0.y
+        max_x, max_y = g0.x + g0.width, g0.y + g0.height
+        for i in range(1, n):
+            g = display.get_monitor(i).get_geometry()
+            min_x = min(min_x, g.x)
+            min_y = min(min_y, g.y)
+            max_x = max(max_x, g.x + g.width)
+            max_y = max(max_y, g.y + g.height)
+        return (min_x, min_y, max_x - min_x, max_y - min_y)
+
+    def _apply_sway_mapping(self, attempts: int = 8):
+        """On sway, map the Hints absolute uinput device to span all outputs.
+
+        Sway assigns virtual absolute pointers to a single output by default,
+        which causes clicks to land on the wrong monitor in multi-monitor
+        setups. `swaymsg input <id> map_to_region` remaps to the full span.
+        Retries because uinput device registration is async.
+        """
+        if not os.environ.get("SWAYSOCK"):
+            return
+        x, y, w, h = self._region
+
+        def try_map():
+            try:
+                out = subprocess.run(
+                    ["swaymsg", "-t", "get_inputs", "-r"],
+                    capture_output=True, check=True, timeout=2,
+                )
+                inputs = json.loads(out.stdout.decode("utf-8"))
+            except Exception as exc:
+                logger.debug("swaymsg get_inputs failed: %s", exc)
+                return True  # retry
+            for dev in inputs:
+                name = dev.get("name", "")
+                if "Hints absolute mouse" not in name:
+                    continue
+                ident = dev.get("identifier")
+                if not ident:
+                    continue
+                try:
+                    subprocess.run(
+                        ["swaymsg", "input", ident,
+                         "map_to_region", str(x), str(y), str(w), str(h)],
+                        capture_output=True, check=True, timeout=2,
+                    )
+                    logger.debug(
+                        "Mapped sway input %s to region %d,%d %dx%d",
+                        ident, x, y, w, h,
+                    )
+                except Exception as exc:
+                    logger.warning("swaymsg map_to_region failed: %s", exc)
+                return False  # done
+            return True  # device not found yet, retry
+
+        remaining = [attempts]
+
+        def tick():
+            remaining[0] -= 1
+            keep_going = try_map()
+            return keep_going and remaining[0] > 0
+
+        GLib.timeout_add(250, tick)
+
+    def _reload_mouse(self):
+        self._region = self._get_total_display_region()
+        self.mouse = Mouse(self._region[2], self._region[3])
+        self._apply_sway_mapping()
 
     def on_size_changed(self, screen: Gdk.Screen):
         """Screen size change event handler to update the mouse device min/max
@@ -278,7 +347,7 @@ class MouseService:
 
         :param screen: The screen object for the event.
         """
-        self.mouse = Mouse(*self._get_total_display_size())
+        self._reload_mouse()
 
     def on_monitors_changed(self, _display: Gdk.Display, _monitor: Gdk.Monitor):
         """Monitor add/remove event handler to update the mouse device min/max
@@ -288,7 +357,7 @@ class MouseService:
         :param display: The display object for the event.
         :param monitor: The monitor that was added or removed.
         """
-        self.mouse = Mouse(*self._get_total_display_size())
+        self._reload_mouse()
 
     def socket_connection(self):
         """Handle socket connection events.

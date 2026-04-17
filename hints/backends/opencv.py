@@ -56,20 +56,9 @@ class OpenCV(HintsBackend):
         """
         children: list[Child] = []
         application_rules = self.get_application_rules()
-        window_extents_offsets = (0, 0, 0, 0)
-
-        match self.window_system.window_system_name:
-            case "sway":
-                # in sway, we need to exclude the top bar from the screenshot region
-                window_extents_offsets = (0, self.window_system.bar_height, 0, 0)
 
         gray_image = cvtColor(
-            array(
-                self.screenshot(
-                    self.window_system.focused_window_extents,
-                    window_extents_offsets=window_extents_offsets,
-                )
-            ),
+            array(self.screenshot(self.window_system.focused_window_extents)),
             COLOR_BGR2GRAY,
         )
 

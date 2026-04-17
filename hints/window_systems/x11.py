@@ -14,10 +14,14 @@ class X11(WindowSystem):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self._active_window = None
 
-        self.screen = Wnck.Screen.get_default()
-        self.screen.force_update()
-        self.active_window = self.screen.get_active_window()
+    def _get_active_window(self):
+        if self._active_window is None:
+            screen = Wnck.Screen.get_default()
+            screen.force_update()
+            self._active_window = screen.get_active_window()
+        return self._active_window
 
     @property
     def window_system_name(self) -> str:
@@ -35,7 +39,7 @@ class X11(WindowSystem):
 
         :return: Active window extents (x, y, width, height).
         """
-        return self.active_window.get_geometry()
+        return self._get_active_window().get_geometry()
 
     @property
     def focused_window_pid(self) -> int:
@@ -43,7 +47,7 @@ class X11(WindowSystem):
 
         :return: Process ID of focused window.
         """
-        return self.active_window.get_pid()
+        return self._get_active_window().get_pid()
 
     @property
     def focused_applicaiton_name(self) -> str:
@@ -54,4 +58,4 @@ class X11(WindowSystem):
 
         :return: Focused application name.
         """
-        return self.active_window.get_class_instance_name()
+        return self._get_active_window().get_class_instance_name()

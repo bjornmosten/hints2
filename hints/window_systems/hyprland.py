@@ -7,17 +7,19 @@ from hints.window_systems.window_system import WindowSystem
 
 
 class Hyprland(WindowSystem):
-    """Sway Window system class."""
+    """Hyprland Window system class."""
 
     def __init__(self):
         super().__init__()
-        self.focused_window = self._get_focused_window_from_hyprlandctl()
+        self._snapshot = None
 
-    def _get_focused_window_from_hyprlandctl(self):
-        focused_window = run(
-            ["hyprctl", "activewindow", "-j"], capture_output=True, check=True
-        )
-        return loads(focused_window.stdout.decode("utf-8"))
+    def _get_snapshot(self) -> dict:
+        if self._snapshot is None:
+            result = run(
+                ["hyprctl", "activewindow", "-j"], capture_output=True, check=True
+            )
+            self._snapshot = loads(result.stdout.decode("utf-8"))
+        return self._snapshot  # type: ignore[return-value]
 
     @property
     def window_system_name(self) -> str:
@@ -35,8 +37,9 @@ class Hyprland(WindowSystem):
 
         :return: Active window extents (x, y, width, height).
         """
-        x, y = self.focused_window["at"]
-        width, height = self.focused_window["size"]
+        snap = self._get_snapshot()
+        x, y = snap["at"]
+        width, height = snap["size"]
         return (x, y, width, height)
 
     @property
@@ -45,7 +48,7 @@ class Hyprland(WindowSystem):
 
         :return: Process ID of focused window.
         """
-        return self.focused_window["pid"]
+        return self._get_snapshot()["pid"]
 
     @property
     def focused_applicaiton_name(self) -> str:
@@ -56,4 +59,4 @@ class Hyprland(WindowSystem):
 
         :return: Focused application name.
         """
-        return self.focused_window["class"]
+        return self._get_snapshot()["class"]

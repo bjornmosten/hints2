@@ -11,15 +11,19 @@ from hints.window_systems.window_system import WindowSystem
 
 
 class Plasmashell(WindowSystem):
-    """Sway Window system class."""
+    """Plasmashell Window system class."""
 
     def __init__(self):
         super().__init__()
+        self._snapshot = None
 
-        with as_file(
-            files("hints") / "scripts/kwin/active_window_information.mjs"
-        ) as path:
-            self._active_window = self._run_kwin_script(str(path))
+    def _get_active_window(self) -> Any:
+        if self._snapshot is None:
+            with as_file(
+                files("hints") / "scripts/kwin/active_window_information.mjs"
+            ) as path:
+                self._snapshot = self._run_kwin_script(str(path))
+        return self._snapshot
 
     def _run_kwin_script(self, kwin_script_path: str) -> Any:
         """Run KWin script at the given path that returns output in JSON format
@@ -86,7 +90,7 @@ class Plasmashell(WindowSystem):
 
         :return: Active window extents (x, y, width, height).
         """
-        return tuple(self._active_window["extents"])
+        return tuple(self._get_active_window()["extents"])
 
     @property
     def focused_window_pid(self) -> int:
@@ -94,7 +98,7 @@ class Plasmashell(WindowSystem):
 
         :return: Process ID of focused window.
         """
-        return self._active_window["pid"]
+        return self._get_active_window()["pid"]
 
     @property
     def focused_applicaiton_name(self) -> str:
@@ -105,4 +109,4 @@ class Plasmashell(WindowSystem):
 
         :return: Focused application name.
         """
-        return self._active_window["name"]
+        return self._get_active_window()["name"]

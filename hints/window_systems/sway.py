@@ -11,45 +11,51 @@ class Sway(WindowSystem):
 
     def __init__(self):
         super().__init__()
-        self.focused_window = self._get_focused_window_from_sway_tree()
-        self.focused_workspace = self._get_focused_workspace_from_sway_tree()
-        self.focused_output = self._get_focused_output_from_sway_tree()
-        self.bar_height = self._get_bar_height()
+        self._snapshot = None
 
-    def _get_focused_window_from_sway_tree(self):
+    def _fetch_snapshot(self):
+        """Fetch all sway state in one go for consistency."""
         swaytree = Popen(["swaymsg", "-t", "get_tree"], stdout=PIPE)
-        focused = Popen(
+        focused_window = Popen(
             ["jq", ".. | select(.type?) | select(.focused==true)"],
             stdin=swaytree.stdout,
             stdout=PIPE,
         )
+        window = loads(focused_window.communicate()[0].decode("utf-8"))
 
-        return loads(focused.communicate()[0].decode("utf-8"))
-
-    def _get_focused_workspace_from_sway_tree(self):
         swaytree = Popen(["swaymsg", "-t", "get_workspaces"], stdout=PIPE)
-        focused = Popen(
+        focused_ws = Popen(
             ["jq", ".[] | select(.focused==true)"],
             stdin=swaytree.stdout,
             stdout=PIPE,
         )
+        workspace = loads(focused_ws.communicate()[0].decode("utf-8"))
 
-        return loads(focused.communicate()[0].decode("utf-8"))
-
-    def _get_focused_output_from_sway_tree(self):
         swaytree = Popen(["swaymsg", "-t", "get_outputs"], stdout=PIPE)
-        focused = Popen(
+        focused_out = Popen(
             ["jq", ".[] | select(.focused==true)"],
             stdin=swaytree.stdout,
             stdout=PIPE,
         )
+        output = loads(focused_out.communicate()[0].decode("utf-8"))
 
-        return loads(focused.communicate()[0].decode("utf-8"))
+        self._snapshot = {
+            "window": window,
+            "workspace": workspace,
+            "output": output,
+        }
 
-    def _get_bar_height(self) -> int:
+    def _get_snapshot(self) -> dict:
+        if self._snapshot is None:
+            self._fetch_snapshot()
+        return self._snapshot  # type: ignore[return-value]
+
+    @property
+    def bar_height(self) -> int:
+        snap = self._get_snapshot()
         return (
-            self.focused_output["rect"]["height"]
-            - self.focused_workspace["rect"]["height"]
+            snap["output"]["rect"]["height"]
+            - snap["workspace"]["rect"]["height"]
         )
 
     @property
@@ -66,13 +72,19 @@ class Sway(WindowSystem):
     def focused_window_extents(self) -> tuple[int, int, int, int]:
         """Get active window extents.
 
+        Skips the sway window decoration (title bar) so the screenshot
+        and overlay start at the actual application content area.
+
         :return: Active window extents (x, y, width, height).
         """
+        focused_window = self._get_snapshot()["window"]
+        rect = focused_window["rect"]
+        deco_height = focused_window.get("deco_rect", {}).get("height", 0)
         return (
-            self.focused_window["rect"]["x"],
-            self.focused_window["rect"]["y"],
-            self.focused_window["rect"]["width"],
-            self.focused_window["rect"]["height"],
+            rect["x"],
+            rect["y"] + deco_height,
+            rect["width"],
+            rect["height"] - deco_height,
         )
 
     @property
@@ -81,7 +93,7 @@ class Sway(WindowSystem):
 
         :return: Process ID of focused window.
         """
-        return self.focused_window["pid"]
+        return self._get_snapshot()["window"]["pid"]
 
     @property
     def focused_applicaiton_name(self) -> str:
@@ -92,4 +104,4 @@ class Sway(WindowSystem):
 
         :return: Focused application name.
         """
-        return self.focused_window["app_id"]
+        return self._get_snapshot()["window"]["app_id"]
