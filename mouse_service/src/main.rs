@@ -1,3 +1,5 @@
+use evdev::uinput::{VirtualDevice, VirtualDeviceBuilder};
+use evdev::{AbsInfo, AbsoluteAxisType, AttributeSet, EventType, InputEvent, Key, RelativeAxisType};
 use std::fs;
 use std::io::{Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
@@ -7,37 +9,83 @@ use std::thread;
 use std::time::{Duration, Instant};
 use utils::{MouseButton, MouseButtonState, MouseMode, UNIX_DOMAIN_SOCKET_FILE};
 
-const REL_X: u16 = 0x00;
-const REL_Y: u16 = 0x01;
-const REL_HWHEEL: u16 = 0x06;
-const REL_WHEEL: u16 = 0x08;
-const BTN_LEFT: u16 = 0x110;
-const BTN_RIGHT: u16 = 0x111;
-const ABS_X: u16 = 0x00;
-const ABS_Y: u16 = 0x01;
-
 pub struct Mouse {
     screen_width: i32,
     screen_height: i32,
     write_pause: Duration,
+    relative_device: VirtualDevice,
+    absolute_device: VirtualDevice,
 }
 
 impl Mouse {
     pub fn new(screen_width: i32, screen_height: i32) -> Self {
+        let mut rel_keys = AttributeSet::<Key>::new();
+        rel_keys.insert(Key::BTN_LEFT);
+        rel_keys.insert(Key::BTN_RIGHT);
+        rel_keys.insert(Key::BTN_MIDDLE);
+
+        let mut rel_axes = AttributeSet::<RelativeAxisType>::new();
+        rel_axes.insert(RelativeAxisType::REL_X);
+        rel_axes.insert(RelativeAxisType::REL_Y);
+        rel_axes.insert(RelativeAxisType::REL_HWHEEL);
+        rel_axes.insert(RelativeAxisType::REL_WHEEL);
+
+        let relative_device = VirtualDeviceBuilder::new()
+            .unwrap()
+            .name("Hints relative mouse")
+            .with_keys(&rel_keys)
+            .unwrap()
+            .with_relative_axes(&rel_axes)
+            .unwrap()
+            .build()
+            .unwrap();
+
+        let mut abs_keys = AttributeSet::<Key>::new();
+        abs_keys.insert(Key::BTN_LEFT);
+        abs_keys.insert(Key::BTN_RIGHT);
+        abs_keys.insert(Key::BTN_MIDDLE);
+
+        let abs_x_info = AbsInfo::new(0, 0, screen_width, 0, 0, 0);
+        let abs_y_info = AbsInfo::new(0, 0, screen_height, 0, 0, 0);
+
+        let absolute_device = VirtualDeviceBuilder::new()
+            .unwrap()
+            .name("Hints absolute mouse")
+            .with_keys(&abs_keys)
+            .unwrap()
+            .with_absolute_axis(&AbsoluteAxisType::ABS_X, &abs_x_info)
+            .unwrap()
+            .with_absolute_axis(&AbsoluteAxisType::ABS_Y, &abs_y_info)
+            .unwrap()
+            .build()
+            .unwrap();
+
         Self {
             screen_width,
             screen_height,
-            write_pause: Duration::from_millis(10),
+            write_pause: Duration::from_millis(30),
+            relative_device,
+            absolute_device,
         }
     }
 
     pub fn scroll(&mut self, x: i32, y: i32) {
-        println!("scroll: x={}, y={}", x, y);
+        let ev_h = InputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_HWHEEL.0, x);
+        let ev_v = InputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_WHEEL.0, y);
+        self.relative_device.emit(&[ev_h, ev_v]).unwrap();
         thread::sleep(self.write_pause);
     }
 
     pub fn move_mouse(&mut self, x: i32, y: i32, absolute: bool) {
-        println!("move_mouse: x={}, y={}, absolute={}", x, y, absolute);
+        if absolute {
+            let ev_x = InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_X.0, x);
+            let ev_y = InputEvent::new(EventType::ABSOLUTE, AbsoluteAxisType::ABS_Y.0, y);
+            self.absolute_device.emit(&[ev_x, ev_y]).unwrap();
+        } else {
+            let ev_x = InputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_X.0, x);
+            let ev_y = InputEvent::new(EventType::RELATIVE, RelativeAxisType::REL_Y.0, y);
+            self.relative_device.emit(&[ev_x, ev_y]).unwrap();
+        }
         thread::sleep(self.write_pause);
     }
 
@@ -50,11 +98,33 @@ impl Mouse {
         repeat: u32,
         absolute: bool,
     ) {
-        println!(
-            "click: x={}, y={}, button={:?}, states={:?}, repeat={}, absolute={}",
-            x, y, button, button_states, repeat, absolute
-        );
-        thread::sleep(self.write_pause);
+        self.move_mouse(x, y, absolute);
+
+        let key = match button {
+            MouseButton::Left => Key::BTN_LEFT,
+            MouseButton::Right => Key::BTN_RIGHT,
+        };
+
+        let device = if absolute {
+            &mut self.absolute_device
+        } else {
+            &mut self.relative_device
+        };
+
+        for _ in 0..repeat {
+            for state in button_states {
+                let ev = InputEvent::new(EventType::KEY, key.code(), *state as i32);
+                device.emit(&[ev]).unwrap();
+                thread::sleep(self.write_pause);
+            }
+        }
+
+        if absolute {
+            // small move to clear previous write incase the previous move wants
+            // to be repeated
+            self.move_mouse(x + 1, y, true);
+            self.move_mouse(x - 1, y, true);
+        }
     }
 
     pub fn do_mouse_action(
@@ -218,10 +288,27 @@ impl MouseService {
 fn main() {
     println!("Starting hintsd daemon (Rust)...");
 
-    let screen_width = 1920;
-    let screen_height = 1080;
+    gtk::init().expect("Failed to initialize GTK");
+    let display = gdk::Display::default().expect("Failed to get default display");
+    let mut max_x = 0;
+    let mut max_y = 0;
 
-    let service = MouseService::new(screen_width, screen_height);
+    for i in 0..display.n_monitors() {
+        if let Some(monitor) = display.monitor(i) {
+            let geo = monitor.geometry();
+            max_x = max_x.max(geo.x() + geo.width());
+            max_y = max_y.max(geo.y() + geo.height());
+        }
+    }
+
+    if max_x == 0 || max_y == 0 {
+        max_x = 1920;
+        max_y = 1080;
+    }
+
+    println!("Detected screen size: {}x{}", max_x, max_y);
+
+    let service = MouseService::new(max_x, max_y);
 
     println!("hintsd listening on {}", UNIX_DOMAIN_SOCKET_FILE);
     service.run();

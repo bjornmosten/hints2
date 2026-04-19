@@ -62,7 +62,7 @@ fn setup_uinput_module() {
 
 fn setup_udev_rules() {
     println!("Setting up udev rules...");
-    let rule = "KERNEL==\"uinput\", TAG+=\"uaccess\"";
+    let rule = "KERNEL==\"uinput\", GROUP=\"input\", MODE:=\"0660\"";
     std::fs::write("/etc/udev/rules.d/80-hints.rules", rule).ok();
 
     if let Ok(user) = env::var("SUDO_USER") {
@@ -112,6 +112,11 @@ fn setup_hintsd() {
 }
 
 fn setup_gnome_plugin() {
+    // TODO: package and install the GNOME Shell extension that backs
+    // `gnome_overlay.init_overlay_window` in the Python reference. Requires
+    // bundling the extension source under a known path (e.g.
+    // `/usr/share/gnome-shell/extensions/hints@pigello.se`) and restarting
+    // gnome-shell for the user.
     println!("Setting up GNOME plugin...");
 }
 
@@ -123,23 +128,43 @@ fn is_wayland_gnome() -> bool {
 }
 
 fn should_continue() -> bool {
-    println!("The following changes will be made:");
-    println!("  - Accessibility variables will be configured");
-    println!("  - uinput module will be loaded");
-    println!("  - udev rules will be created");
-    println!("  - hintsd service will be enabled");
+    println!("The following setup steps will be performed:");
+    for description in setup_descriptions() {
+        println!("  - {}", description);
+    }
     println!();
-    println!("Do you want to continue? (y/N)");
+    println!("Do you want to continue? (Y/n)");
 
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).ok();
 
-    input.trim().to_lowercase() == "y"
+    let answer = input.trim().to_lowercase();
+    answer.is_empty() || answer == "y" || answer == "yes"
+}
+
+fn setup_descriptions() -> Vec<&'static str> {
+    vec![
+        "Write accessibility environment variables to /etc/environment",
+        "Load the uinput kernel module and ensure it loads on boot",
+        "Create /etc/udev/rules.d/80-hints.rules granting input access to uinput",
+        "Add the current user to the 'input' group",
+        "Enable and start the hintsd user service",
+    ]
 }
 
 fn show_post_setup_instructions() {
     println!();
     println!("Setup complete!");
     println!();
-    println!("Please reboot your system for changes to take effect.");
+    println!("A reboot is required for all changes to take effect.");
+    println!("Reboot now? (y/N)");
+
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input).ok();
+    let answer = input.trim().to_lowercase();
+    if answer == "y" || answer == "yes" {
+        std::process::Command::new("sudo").arg("reboot").status().ok();
+    } else {
+        println!("Please reboot your system manually for changes to take effect.");
+    }
 }

@@ -19,6 +19,11 @@ itertools = "0.13"
 zbus = { version = "4", default-features = false, features = ["tokio"] }
 utils = { path = "../utils" }
 window_systems = { path = "../window_systems" }
+backends = { path = "../backends" }
+# TODO: Re-enable gtk-layer-shell once the `gtk-layer-shell-0` system library
+# (provides `gtk-layer-shell-0.pc`) is available in this build environment.
+# On Debian/Ubuntu: `apt install libgtk-layer-shell-dev`.
+# gtk-layer-shell = "0.8"
 
 [[bin]]
 name = "hints"

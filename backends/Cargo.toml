@@ -7,10 +7,14 @@ edition = "2021"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 log = "0.4"
-zbus = { version = "4", default-features = false, features = ["tokio"] }
-atspi = "0.19"
+atspi = { version = "0.19", default-features = false, features = ["tokio", "proxies-tokio", "connection-tokio"] }
+tokio = { workspace = true }
 image = "0.25"
+imageproc = "0.25"
 screenshots = "0.8"
+ort = { version = "=2.0.0-rc.12", default-features = false, features = ["std", "ndarray", "load-dynamic", "api-24"] }
+ndarray = "0.17"
+fast_image_resize = "5"
 utils = { path = "../utils" }
 window_systems = { path = "../window_systems" }
 

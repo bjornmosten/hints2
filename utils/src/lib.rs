@@ -179,6 +179,10 @@ pub struct HintsConfig {
     pub hint_background_b: f64,
     #[serde(default = "default_hint_background_alpha")]
     pub hint_background_a: f64,
+    #[serde(default)]
+    pub hint_x_offset: i32,
+    #[serde(default)]
+    pub hint_y_offset: i32,
 }
 
 fn default_hint_height() -> u32 {
@@ -244,6 +248,8 @@ impl Default for HintsConfig {
             hint_background_g: default_hint_background_g(),
             hint_background_b: default_hint_background_b(),
             hint_background_a: default_hint_background_alpha(),
+            hint_x_offset: 0,
+            hint_y_offset: 0,
         }
     }
 }
@@ -256,10 +262,48 @@ pub struct BackendsConfig {
     pub atspi: AtspiConfig,
     #[serde(default)]
     pub opencv: OpenCvConfig,
+    #[serde(default)]
+    pub yolo: YoloConfig,
 }
 
 fn default_backends_enable() -> Vec<String> {
-    vec!["atspi".to_string(), "opencv".to_string()]
+    vec!["atspi".to_string(), "opencv".to_string(), "yolo".to_string()]
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct YoloConfig {
+    #[serde(default = "default_yolo_model_path")]
+    pub model_path: String,
+    #[serde(default = "default_yolo_input_size")]
+    pub input_size: u32,
+    #[serde(default = "default_yolo_conf_threshold")]
+    pub conf_threshold: f32,
+    #[serde(default = "default_yolo_iou_threshold")]
+    pub iou_threshold: f32,
+}
+
+fn default_yolo_model_path() -> String {
+    "models/icon_detect_480.onnx".to_string()
+}
+fn default_yolo_input_size() -> u32 {
+    480
+}
+fn default_yolo_conf_threshold() -> f32 {
+    0.25
+}
+fn default_yolo_iou_threshold() -> f32 {
+    0.45
+}
+
+impl Default for YoloConfig {
+    fn default() -> Self {
+        Self {
+            model_path: default_yolo_model_path(),
+            input_size: default_yolo_input_size(),
+            conf_threshold: default_yolo_conf_threshold(),
+            iou_threshold: default_yolo_iou_threshold(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -368,7 +412,7 @@ pub fn load_config() -> Config {
     Config::default()
 }
 
-fn expand_path(path: &str) -> PathBuf {
+pub fn expand_path(path: &str) -> PathBuf {
     if path.starts_with("~/") {
         if let Ok(home) = std::env::var("HOME") {
             return PathBuf::from(path.replacen("~", &home, 1));
@@ -503,6 +547,12 @@ fn merge_hints_config(default_hints: &HintsConfig, user_hints: &HintsConfig) -> 
     }
     if user_hints.hint_background_a != default_hints.hint_background_a {
         merged.hint_background_a = user_hints.hint_background_a;
+    }
+    if user_hints.hint_x_offset != 0 {
+        merged.hint_x_offset = user_hints.hint_x_offset;
+    }
+    if user_hints.hint_y_offset != 0 {
+        merged.hint_y_offset = user_hints.hint_y_offset;
     }
 
     merged
